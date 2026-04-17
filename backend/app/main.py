@@ -6,6 +6,7 @@ from app.core.security import hash_password
 from app.models import admin, training_module, employee, quiz, progress
 from app.routes import auth, modules, employees, dashboard, training
 
+
 app = FastAPI(title="CyberShield Training API", version="1.0.0")
 
 app.add_middleware(
@@ -21,6 +22,7 @@ app.include_router(modules.router, prefix="/modules", tags=["modules"])
 app.include_router(employees.router, prefix="/employees", tags=["employees"])
 app.include_router(dashboard.router, prefix="/dashboard", tags=["dashboard"])
 app.include_router(training.router, prefix="/training", tags=["training"])
+
 
 BASELINE_MODULES = [
     {"title": "Phishing Awareness Training", "description": "Learn how to identify and avoid phishing emails, fake websites, and social engineering attacks targeting your organization.", "video_url": "https://www.youtube.com/watch?v=inWWhr5tnEA", "content_type": "video", "category": "mandatory", "summary": None, "pass_threshold": 80, "questions": [{"question_text": "What is phishing?", "option_a": "A type of malware that corrupts files", "option_b": "A fraudulent attempt to obtain sensitive information by disguising as a trustworthy entity", "option_c": "A network scanning technique", "option_d": "A password cracking method", "correct_option": "B"}, {"question_text": "Which is a common sign of a phishing email?", "option_a": "Email from your CEO with correct spelling", "option_b": "Urgent request to click a link and verify your credentials immediately", "option_c": "Email with your company logo and proper formatting", "option_d": "Email sent during business hours", "correct_option": "B"}, {"question_text": "What should you do if you receive a suspicious email?", "option_a": "Click the link to verify if it is real", "option_b": "Reply to the sender asking if it is legitimate", "option_c": "Report it to your IT department and delete it without clicking", "option_d": "Forward it to colleagues to warn them", "correct_option": "C"}, {"question_text": "Spear phishing is different from regular phishing because:", "option_a": "It uses more advanced malware", "option_b": "It targets specific individuals with personalized messages", "option_c": "It only targets large multinational companies", "option_d": "It happens only through phone calls", "correct_option": "B"}, {"question_text": "Which URL is most likely a phishing attempt?", "option_a": "https://www.google.com", "option_b": "https://www.yourbank-nepal.com", "option_c": "https://www.g00gle-security-alert.com", "option_d": "https://mail.company.com.np", "correct_option": "C"}, {"question_text": "What is whaling in cybersecurity?", "option_a": "Phishing attacks targeting senior executives like CEOs and CFOs", "option_b": "Attacks on large enterprise networks", "option_c": "Fishing for passwords using brute force", "option_d": "A type of DDoS attack", "correct_option": "A"}, {"question_text": "Which of these is the safest action when you get an email asking you to reset your bank password?", "option_a": "Click the link in the email since it looks official", "option_b": "Call the bank using the number in the email", "option_c": "Go directly to the bank website by typing the URL yourself", "option_d": "Reply to the email with your current password", "correct_option": "C"}, {"question_text": "What does a phishing email often create to make you act quickly?", "option_a": "Excitement and reward offers", "option_b": "A sense of urgency or fear", "option_c": "Long technical explanations", "option_d": "Professional and formal language only", "correct_option": "B"}, {"question_text": "SMS phishing attacks are called:", "option_a": "Vishing", "option_b": "Smishing", "option_c": "Spishing", "option_d": "Quishing", "correct_option": "B"}, {"question_text": "What is the best technical defense against phishing emails?", "option_a": "Using a fast internet connection", "option_b": "Email filtering and anti-phishing tools combined with user awareness", "option_c": "Changing your email password monthly", "option_d": "Using only mobile devices to read email", "correct_option": "B"}]},
@@ -47,39 +49,83 @@ BASELINE_MODULES = [
 
 def create_tables_and_seed():
     Base.metadata.create_all(bind=engine)
+
     from app.core.database import SessionLocal
     from app.models.admin import Admin
     from app.models.training_module import TrainingModule
     from app.models.quiz import Quiz, QuizQuestion
+
     db = SessionLocal()
     try:
         existing_admin = db.query(Admin).filter(Admin.email == settings.ADMIN_EMAIL).first()
+
         if not existing_admin:
-            admin_user = Admin(email=settings.ADMIN_EMAIL, hashed_password=hash_password(settings.ADMIN_PASSWORD), full_name=settings.ADMIN_NAME, is_active=True)
+            admin_user = Admin(
+                email=settings.ADMIN_EMAIL,
+                hashed_password=hash_password(settings.ADMIN_PASSWORD),
+                full_name=settings.ADMIN_NAME,
+                is_active=True,
+            )
             db.add(admin_user)
             db.commit()
             db.refresh(admin_user)
             admin_id = admin_user.id
             print(f"Admin created: {settings.ADMIN_EMAIL}")
         else:
+            # Always sync admin credentials from .env on startup
+            existing_admin.email = settings.ADMIN_EMAIL
+            existing_admin.hashed_password = hash_password(settings.ADMIN_PASSWORD)
+            existing_admin.full_name = settings.ADMIN_NAME
+            existing_admin.is_active = True
+            db.commit()
+            db.refresh(existing_admin)
             admin_id = existing_admin.id
-            print(f"Admin exists: {settings.ADMIN_EMAIL}")
+            print(f"Admin updated from .env: {settings.ADMIN_EMAIL}")
+
         existing_modules = db.query(TrainingModule).count()
         if existing_modules == 0:
-            print("Seeding 20 training modules...")
+            print("Seeding training modules...")
             for mod_data in BASELINE_MODULES:
-                module = TrainingModule(title=mod_data["title"], description=mod_data["description"], video_url=mod_data["video_url"], pass_threshold=mod_data["pass_threshold"], content_type=mod_data.get("content_type", "video"), category=mod_data.get("category", "mandatory"), summary=mod_data.get("summary"), is_active=True, created_by=admin_id)
+                module = TrainingModule(
+                    title=mod_data["title"],
+                    description=mod_data["description"],
+                    video_url=mod_data["video_url"],
+                    pass_threshold=mod_data["pass_threshold"],
+                    content_type=mod_data.get("content_type", "video"),
+                    category=mod_data.get("category", "mandatory"),
+                    summary=mod_data.get("summary"),
+                    is_active=True,
+                    created_by=admin_id,
+                )
                 db.add(module)
                 db.flush()
-                quiz_obj = Quiz(module_id=module.id, title=f"{mod_data['title']} Quiz")
+
+                quiz_obj = Quiz(
+                    module_id=module.id,
+                    title=f"{mod_data['title']} Quiz"
+                )
                 db.add(quiz_obj)
                 db.flush()
+
                 for i, q in enumerate(mod_data["questions"]):
-                    db.add(QuizQuestion(quiz_id=quiz_obj.id, question_text=q["question_text"], option_a=q["option_a"], option_b=q["option_b"], option_c=q["option_c"], option_d=q["option_d"], correct_option=q["correct_option"], order_index=i))
+                    db.add(
+                        QuizQuestion(
+                            quiz_id=quiz_obj.id,
+                            question_text=q["question_text"],
+                            option_a=q["option_a"],
+                            option_b=q["option_b"],
+                            option_c=q["option_c"],
+                            option_d=q["option_d"],
+                            correct_option=q["correct_option"],
+                            order_index=i,
+                        )
+                    )
+
             db.commit()
-            print("20 modules seeded successfully!")
+            print("Training modules seeded successfully!")
         else:
             print(f"Modules already exist: {existing_modules} found")
+
     finally:
         db.close()
 

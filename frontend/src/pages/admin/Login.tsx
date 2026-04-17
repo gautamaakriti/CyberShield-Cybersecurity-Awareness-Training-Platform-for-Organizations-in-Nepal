@@ -80,7 +80,7 @@ export default function Login() {
         </div>
 
         <p className="text-center text-gray-600 text-xs mt-6">
-          Nepal Cybersecurity Awareness Training Platform © 2024
+          Nepal Cybersecurity Awareness Training Platform © 2026
         </p>
       </div>
     </div>
