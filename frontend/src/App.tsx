@@ -9,6 +9,7 @@ import CreateModule from './pages/admin/CreateModule'
 import CreateQuiz from './pages/admin/CreateQuiz'
 import Employees from './pages/admin/Employees'
 import Reports from './pages/admin/Reports'
+import PhishingSimulation from './pages/admin/PhishingSimulation'
 import AdminLayout from './components/layout/AdminLayout'
 
 // Employee pages
@@ -17,6 +18,7 @@ import MyTraining from './pages/employee/MyTraining'
 import VideoPlayer from './pages/employee/VideoPlayer'
 import Quiz from './pages/employee/Quiz'
 import Result from './pages/employee/Result'
+import PhishingInbox from './pages/employee/PhishingInbox'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
@@ -27,13 +29,10 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Default */}
         <Route path="/" element={<Navigate to="/admin/login" replace />} />
 
-        {/* Admin auth */}
         <Route path="/admin/login" element={<Login />} />
 
-        {/* Protected admin routes */}
         <Route path="/admin" element={
           <ProtectedRoute>
             <AdminLayout />
@@ -45,14 +44,15 @@ export default function App() {
           <Route path="modules/:id/quiz" element={<CreateQuiz />} />
           <Route path="employees" element={<Employees />} />
           <Route path="reports" element={<Reports />} />
+          <Route path="phishing" element={<PhishingSimulation />} />
         </Route>
 
-        {/* Employee routes */}
         <Route path="/employee/login" element={<EmployeeLogin />} />
         <Route path="/employee/training" element={<MyTraining />} />
         <Route path="/employee/training/:token/watch" element={<VideoPlayer />} />
         <Route path="/employee/training/:token/quiz" element={<Quiz />} />
         <Route path="/employee/training/:token/result" element={<Result />} />
+        <Route path="/employee/phishing" element={<PhishingInbox />} />
       </Routes>
     </BrowserRouter>
   )

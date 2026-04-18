@@ -20,9 +20,9 @@ const statusLabels: Record<string, string> = {
 }
 
 const categoryLabels: Record<string, string> = {
-  mandatory:       '🔴 Mandatory',
-  nepal_compliance:'🟡 Nepal Law',
-  optional:        '🟢 Optional',
+  mandatory:        '🔴 Mandatory',
+  nepal_compliance: '🟡 Nepal Law',
+  optional:         '🟢 Optional',
 }
 
 export default function MyTraining() {
@@ -47,6 +47,7 @@ export default function MyTraining() {
   const handleLogout = () => {
     localStorage.removeItem('employee_token')
     localStorage.removeItem('employee_name')
+    localStorage.removeItem('employee_id')
     navigate('/employee/login')
   }
 
@@ -81,10 +82,20 @@ export default function MyTraining() {
               <p className="text-gray-400 text-xs">Welcome, {employeeName}</p>
             </div>
           </div>
-          <button onClick={handleLogout}
-            className="text-sm text-gray-400 hover:text-red-400 transition-colors">
-            Sign Out
-          </button>
+
+          {/* Right side nav */}
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate('/employee/phishing')}
+              className="flex items-center gap-2 text-sm text-gray-400 hover:text-white transition-colors bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded-lg">
+              📬 Phishing Inbox
+            </button>
+            <button
+              onClick={handleLogout}
+              className="text-sm text-gray-400 hover:text-red-400 transition-colors">
+              Sign Out
+            </button>
+          </div>
         </div>
       </div>
 

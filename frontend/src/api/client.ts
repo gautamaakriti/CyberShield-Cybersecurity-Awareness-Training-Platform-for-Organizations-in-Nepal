@@ -97,3 +97,53 @@ export const trainingApi = {
   getResult: (token: string) =>
     empApi.get(`/training/${token}/result`),
 };
+
+// ─── Phishing API ──────────────────────────────────────────────────────────
+
+export const phishingApi = {
+  generateContent: (data: {
+    email_type: string;
+    template_type: string;
+    difficulty: string;
+  }) => api.post('/phishing/generate-content', data),
+
+  create: (data: {
+    title: string;
+    email_type: string;
+    template_type: string;
+    difficulty: string;
+    sender_name: string;
+    sender_email_display: string;
+    subject: string;
+    message_body: string;
+    cta_text?: string;
+    employee_ids: number[];
+  }) => api.post('/phishing/create', data),
+
+  list: () => api.get('/phishing/campaigns'),
+  deleteCampaign: (id: number) => api.delete(`/phishing/campaigns/${id}`),  // ← changed from /phishing/list
+
+  dashboard: () => api.get('/phishing/dashboard'),
+
+  getMyResult: (assignmentId: number, employeeId: number) =>
+    empApi.get(`/phishing/my-result/${assignmentId}?employee_id=${employeeId}`),
+
+  // Employee
+  getInbox: (employeeId: number) =>
+    empApi.get(`/phishing/inbox?employee_id=${employeeId}`),
+
+  getEmail: (assignmentId: number, employeeId: number) =>
+    empApi.get(`/phishing/inbox/${assignmentId}?employee_id=${employeeId}`),
+
+  markOpened: (assignmentId: number, employeeId: number) =>
+    empApi.post(`/phishing/inbox/${assignmentId}/open?employee_id=${employeeId}`),
+
+  markClicked: (assignmentId: number, employeeId: number) =>
+    empApi.post(`/phishing/inbox/${assignmentId}/click?employee_id=${employeeId}`),
+
+  reportPhishing: (assignmentId: number, employeeId: number) =>
+    empApi.post(`/phishing/inbox/${assignmentId}/report-phishing?employee_id=${employeeId}`),
+
+  reportSpam: (assignmentId: number, employeeId: number) =>
+    empApi.post(`/phishing/inbox/${assignmentId}/report-spam?employee_id=${employeeId}`),
+};

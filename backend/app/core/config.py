@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     ADMIN_EMAIL: str = "gautamaakriti404@gmail.com"
     ADMIN_PASSWORD: str = "Admin@123"
     ADMIN_NAME: str = "Super Admin"
+    GROQ_API_KEY: str = ""
 
     class Config:
         env_file = ".env"
