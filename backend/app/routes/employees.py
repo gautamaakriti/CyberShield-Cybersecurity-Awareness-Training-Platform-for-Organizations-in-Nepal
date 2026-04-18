@@ -48,8 +48,8 @@ def employee_login(data: EmployeeLoginRequest, db: Session = Depends(get_db)):
             "full_name": employee.full_name,
             "email": employee.email,
             "department": employee.department,
-            "organization": employee.organization
-        }
+            "organization": employee.organization,
+        },
     }
 
 
@@ -57,15 +57,14 @@ def employee_login(data: EmployeeLoginRequest, db: Session = Depends(get_db)):
 def get_my_modules(token: str, db: Session = Depends(get_db)):
     from app.core.config import settings
     from jose import jwt, JWTError
+
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         employee_id = int(payload.get("sub"))
     except (JWTError, ValueError, TypeError):
         raise HTTPException(status_code=401, detail="Invalid token")
 
-    links = db.query(TrainingLink).filter(
-        TrainingLink.employee_id == employee_id
-    ).all()
+    links = db.query(TrainingLink).filter(TrainingLink.employee_id == employee_id).all()
 
     result = []
     for link in links:
@@ -74,7 +73,7 @@ def get_my_modules(token: str, db: Session = Depends(get_db)):
             continue
         progress = db.query(TrainingProgress).filter(
             TrainingProgress.employee_id == employee_id,
-            TrainingProgress.module_id == module.id
+            TrainingProgress.module_id == module.id,
         ).first()
 
         quiz_info = None
@@ -82,7 +81,7 @@ def get_my_modules(token: str, db: Session = Depends(get_db)):
             quiz_info = {
                 "id": module.quiz.id,
                 "title": module.quiz.title,
-                "question_count": len(module.quiz.questions)
+                "question_count": len(module.quiz.questions),
             }
 
         result.append({
@@ -95,14 +94,14 @@ def get_my_modules(token: str, db: Session = Depends(get_db)):
                 "pass_threshold": module.pass_threshold,
                 "content_type": module.content_type or "video",
                 "category": module.category or "mandatory",
-                "quiz": quiz_info
+                "quiz": quiz_info,
             },
             "progress": {
                 "status": progress.status if progress else "not_started",
                 "attempts": progress.attempts if progress else 0,
                 "best_score": progress.best_score if progress else 0,
-                "completed_at": str(progress.completed_at) if progress and progress.completed_at else None
-            }
+                "completed_at": str(progress.completed_at) if progress and progress.completed_at else None,
+            },
         })
     return result
 
@@ -115,7 +114,7 @@ def list_employees(db: Session = Depends(get_db), admin=Depends(get_current_admi
         assigned = db.query(TrainingLink).filter(TrainingLink.employee_id == e.id).count()
         completed = db.query(TrainingProgress).filter(
             TrainingProgress.employee_id == e.id,
-            TrainingProgress.status == "passed"
+            TrainingProgress.status == "passed",
         ).count()
         result.append({
             "id": e.id,
@@ -126,7 +125,7 @@ def list_employees(db: Session = Depends(get_db), admin=Depends(get_current_admi
             "is_active": e.is_active,
             "created_at": str(e.created_at),
             "assigned_modules": assigned,
-            "completed_modules": completed
+            "completed_modules": completed,
         })
     return result
 
@@ -135,7 +134,7 @@ def list_employees(db: Session = Depends(get_db), admin=Depends(get_current_admi
 def create_employee(
     data: EmployeeCreate,
     db: Session = Depends(get_db),
-    admin=Depends(get_current_admin)
+    admin=Depends(get_current_admin),
 ):
     existing = db.query(Employee).filter(Employee.email == data.email).first()
     if existing:
@@ -147,7 +146,7 @@ def create_employee(
         hashed_password=hash_password(data.password),
         department=data.department,
         organization=data.organization,
-        created_by=admin.id
+        created_by=admin.id,
     )
     db.add(employee)
     db.commit()
@@ -162,7 +161,7 @@ def create_employee(
         "is_active": employee.is_active,
         "created_at": str(employee.created_at),
         "assigned_modules": 0,
-        "completed_modules": 0
+        "completed_modules": 0,
     }
 
 
@@ -170,17 +169,18 @@ def create_employee(
 def delete_employee(
     employee_id: int,
     db: Session = Depends(get_db),
-    admin=Depends(get_current_admin)
+    admin=Depends(get_current_admin),
 ):
     emp = db.query(Employee).filter(Employee.id == employee_id).first()
     if not emp:
         raise HTTPException(status_code=404, detail="Employee not found")
 
-    # Delete child records first to avoid foreign key errors
+    # FIX: Also delete phishing assignments — previously missing, caused FK constraint errors
+    from app.models.phishing import PhishingAssignment
+    db.query(PhishingAssignment).filter(PhishingAssignment.employee_id == employee_id).delete()
+
     db.query(TrainingProgress).filter(TrainingProgress.employee_id == employee_id).delete()
     db.query(TrainingLink).filter(TrainingLink.employee_id == employee_id).delete()
-
-    from app.models.progress import QuizAttempt
     db.query(QuizAttempt).filter(QuizAttempt.employee_id == employee_id).delete()
 
     db.delete(emp)
@@ -192,21 +192,21 @@ def delete_employee(
 def assign_modules(
     data: BulkAssignRequest,
     db: Session = Depends(get_db),
-    admin=Depends(get_current_admin)
+    admin=Depends(get_current_admin),
 ):
     results = []
     for employee_id in data.employee_ids:
         for module_id in data.module_ids:
             existing = db.query(TrainingLink).filter(
                 TrainingLink.employee_id == employee_id,
-                TrainingLink.module_id == module_id
+                TrainingLink.module_id == module_id,
             ).first()
             if existing:
                 results.append({
                     "employee_id": employee_id,
                     "module_id": module_id,
                     "token": existing.token,
-                    "already_existed": True
+                    "already_existed": True,
                 })
             else:
                 token = uuid.uuid4().hex
@@ -214,7 +214,7 @@ def assign_modules(
                     token=token,
                     employee_id=employee_id,
                     module_id=module_id,
-                    created_by=admin.id
+                    created_by=admin.id,
                 )
                 db.add(link)
                 db.commit()
@@ -223,7 +223,7 @@ def assign_modules(
                     "employee_id": employee_id,
                     "module_id": module_id,
                     "token": link.token,
-                    "already_existed": False
+                    "already_existed": False,
                 })
     return {"assignments": results, "total": len(results)}
 
@@ -233,6 +233,6 @@ def assign_modules(
 def generate_links_compat(
     data: BulkAssignRequest,
     db: Session = Depends(get_db),
-    admin=Depends(get_current_admin)
+    admin=Depends(get_current_admin),
 ):
     return assign_modules(data, db, admin)

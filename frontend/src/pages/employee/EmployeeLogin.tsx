@@ -18,6 +18,7 @@ export default function EmployeeLogin() {
       const { access_token, employee } = res.data
       localStorage.setItem('employee_token', access_token)
       localStorage.setItem('employee_name', employee.full_name)
+      localStorage.setItem('employee_id', String(employee.id))  // ← ADD THIS
       navigate('/employee/training')
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Invalid email or password')

@@ -2,10 +2,11 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
 
 const navItems = [
-  { path: '/admin', label: 'Dashboard', icon: '▦', end: true },
-  { path: '/admin/modules', label: 'Modules', icon: '▶' },
-  { path: '/admin/employees', label: 'Employees', icon: '◉' },
-  { path: '/admin/reports', label: 'Reports', icon: '▤' },
+  { path: '/admin',            label: 'Dashboard',           icon: '▦', end: true },
+  { path: '/admin/modules',    label: 'Modules',             icon: '▶' },
+  { path: '/admin/employees',  label: 'Employees',           icon: '◉' },
+  { path: '/admin/reports',    label: 'Reports',             icon: '▤' },
+  { path: '/admin/phishing',   label: 'Phishing simulation', icon: '🎣' },  // ← ADD THIS
 ]
 
 export default function Sidebar() {

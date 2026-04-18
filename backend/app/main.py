@@ -4,7 +4,9 @@ from app.core.config import settings
 from app.core.database import engine, Base
 from app.core.security import hash_password
 from app.models import admin, training_module, employee, quiz, progress
+from app.models import phishing as phishing_models                          # ← ADD
 from app.routes import auth, modules, employees, dashboard, training
+from app.routes import phishing                                              # ← ADD
 
 
 app = FastAPI(title="CyberShield Training API", version="1.0.0")
@@ -22,7 +24,7 @@ app.include_router(modules.router, prefix="/modules", tags=["modules"])
 app.include_router(employees.router, prefix="/employees", tags=["employees"])
 app.include_router(dashboard.router, prefix="/dashboard", tags=["dashboard"])
 app.include_router(training.router, prefix="/training", tags=["training"])
-
+app.include_router(phishing.router)     
 
 BASELINE_MODULES = [
     {"title": "Phishing Awareness Training", "description": "Learn how to identify and avoid phishing emails, fake websites, and social engineering attacks targeting your organization.", "video_url": "https://www.youtube.com/watch?v=inWWhr5tnEA", "content_type": "video", "category": "mandatory", "summary": None, "pass_threshold": 80, "questions": [{"question_text": "What is phishing?", "option_a": "A type of malware that corrupts files", "option_b": "A fraudulent attempt to obtain sensitive information by disguising as a trustworthy entity", "option_c": "A network scanning technique", "option_d": "A password cracking method", "correct_option": "B"}, {"question_text": "Which is a common sign of a phishing email?", "option_a": "Email from your CEO with correct spelling", "option_b": "Urgent request to click a link and verify your credentials immediately", "option_c": "Email with your company logo and proper formatting", "option_d": "Email sent during business hours", "correct_option": "B"}, {"question_text": "What should you do if you receive a suspicious email?", "option_a": "Click the link to verify if it is real", "option_b": "Reply to the sender asking if it is legitimate", "option_c": "Report it to your IT department and delete it without clicking", "option_d": "Forward it to colleagues to warn them", "correct_option": "C"}, {"question_text": "Spear phishing is different from regular phishing because:", "option_a": "It uses more advanced malware", "option_b": "It targets specific individuals with personalized messages", "option_c": "It only targets large multinational companies", "option_d": "It happens only through phone calls", "correct_option": "B"}, {"question_text": "Which URL is most likely a phishing attempt?", "option_a": "https://www.google.com", "option_b": "https://www.yourbank-nepal.com", "option_c": "https://www.g00gle-security-alert.com", "option_d": "https://mail.company.com.np", "correct_option": "C"}, {"question_text": "What is whaling in cybersecurity?", "option_a": "Phishing attacks targeting senior executives like CEOs and CFOs", "option_b": "Attacks on large enterprise networks", "option_c": "Fishing for passwords using brute force", "option_d": "A type of DDoS attack", "correct_option": "A"}, {"question_text": "Which of these is the safest action when you get an email asking you to reset your bank password?", "option_a": "Click the link in the email since it looks official", "option_b": "Call the bank using the number in the email", "option_c": "Go directly to the bank website by typing the URL yourself", "option_d": "Reply to the email with your current password", "correct_option": "C"}, {"question_text": "What does a phishing email often create to make you act quickly?", "option_a": "Excitement and reward offers", "option_b": "A sense of urgency or fear", "option_c": "Long technical explanations", "option_d": "Professional and formal language only", "correct_option": "B"}, {"question_text": "SMS phishing attacks are called:", "option_a": "Vishing", "option_b": "Smishing", "option_c": "Spishing", "option_d": "Quishing", "correct_option": "B"}, {"question_text": "What is the best technical defense against phishing emails?", "option_a": "Using a fast internet connection", "option_b": "Email filtering and anti-phishing tools combined with user awareness", "option_c": "Changing your email password monthly", "option_d": "Using only mobile devices to read email", "correct_option": "B"}]},
@@ -48,7 +50,7 @@ BASELINE_MODULES = [
 
 
 def create_tables_and_seed():
-    Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(bind=engine)   # now also creates phishing tables
 
     from app.core.database import SessionLocal
     from app.models.admin import Admin
@@ -72,7 +74,6 @@ def create_tables_and_seed():
             admin_id = admin_user.id
             print(f"Admin created: {settings.ADMIN_EMAIL}")
         else:
-            # Always sync admin credentials from .env on startup
             existing_admin.email = settings.ADMIN_EMAIL
             existing_admin.hashed_password = hash_password(settings.ADMIN_PASSWORD)
             existing_admin.full_name = settings.ADMIN_NAME
